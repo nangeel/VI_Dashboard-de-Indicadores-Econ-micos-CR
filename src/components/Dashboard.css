@@ -244,7 +244,7 @@
 .table-scroll {
   overflow-x: auto;
   overflow-y: auto;
-  max-height: 380px;
+  max-height: 455px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   -webkit-overflow-scrolling: touch;
@@ -280,6 +280,7 @@
   color: #94a3b8;
   margin: .5rem 0 0;
   text-align: right;
+  padding-bottom: 1rem;
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
