@@ -323,7 +323,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
               <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} width={60} />
-              <Tooltip content={<CustomTooltip prefix="" suffix="" dec={0} />} />
+              <Tooltip content={<CustomTooltip prefix="" suffix="" dec={0} />} isAnimationActive={false} />
               <Legend />
               <Bar dataKey="Turistas" fill={C.turistas} radius={[3, 3, 0, 0]} />
             </BarChart>
