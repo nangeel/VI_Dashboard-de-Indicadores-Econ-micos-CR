@@ -304,7 +304,7 @@ export default function Dashboard() {
                   .map(d => d.periodo)}
               />
               <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11 }} tickFormatter={v => `₡${fmt(v, 0)}`} width={80} />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip labelFormatter={v => { const [y, m] = v.split('-'); return `${MESES_CORTO[+m - 1]} ${y}`; }} />} />
               <Legend />
               <Line type="monotone" dataKey="tipoCambio" name="Tipo de Cambio" stroke={C.tipoCambio} dot={false} strokeWidth={2} />
               <Line type="monotone" dataKey="maximo"     name="Máximo"         stroke={C.maximo}     dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
