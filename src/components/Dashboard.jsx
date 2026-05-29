@@ -236,17 +236,16 @@ export default function Dashboard() {
   , [data]);
 
   // Barras turistas
-  const [filterMesTuristas, setFilterMesTuristas] = useState('');
-
   const turistasData = useMemo(() => {
-    const base = [...data]
-      .filter(d => !filterMesTuristas || d.mes === filterMesTuristas)
-      .sort((a, b) => a.año - b.año || ORDEN_MESES.indexOf(a.mes) - ORDEN_MESES.indexOf(b.mes));
-    return base.map(d => ({
-      periodo:  `${d.año}-${String(ORDEN_MESES.indexOf(d.mes) + 1).padStart(2, '0')}`,
-      Turistas: d.turistas,
+    const map = {};
+    data.forEach(({ año, turistas }) => {
+      if (!map[año]) map[año] = turistas;
+    });
+    return Object.keys(map).sort().map(año => ({
+      periodo: año,
+      Turistas: map[año],
     }));
-  }, [data, filterMesTuristas]);
+  }, [data]);
 
   // KPIs
   const kpis = useMemo(() => {
@@ -319,22 +318,12 @@ export default function Dashboard() {
         {/* ── Barras Turistas ── */}
         <div className="chart-card">
           <h3 className="chart-title">Ingreso de Turistas por Período</h3>
-          <div className="table-filters" style={{ marginBottom: '1rem' }}>
-            <select
-              className="table-select"
-              value={filterMesTuristas}
-              onChange={e => setFilterMesTuristas(e.target.value)}
-            >
-              <option value="">Todos los meses</option>
-              {ORDEN_MESES.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={turistasData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
               <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} width={60} />
-              <Tooltip content={<CustomTooltip prefix="" suffix="" dec={0} labelFormatter={v => { const [y, m] = v.split('-'); return `${MESES_CORTO[+m - 1]} ${y}`; }} />} />
+              <Tooltip content={<CustomTooltip prefix="" suffix="" dec={0} />} />
               <Legend />
               <Bar dataKey="Turistas" fill={C.turistas} radius={[3, 3, 0, 0]} />
             </BarChart>
