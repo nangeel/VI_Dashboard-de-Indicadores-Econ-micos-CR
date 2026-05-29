@@ -44,14 +44,14 @@ function KpiCard({ label, value, accent }) {
 }
 
 // ── Tooltip personalizado ─────────────────────────────────────────────────────
-function CustomTooltip({ active, payload, label, prefix = '₡', suffix = '', labelFormatter }) {
+function CustomTooltip({ active, payload, label, prefix = '₡', suffix = '', labelFormatter, dec = 2 }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="custom-tooltip">
       <p className="tooltip-label">{labelFormatter ? labelFormatter(label) : label}</p>
       {payload.map(p => (
         <p key={p.dataKey} style={{ color: p.color }}>
-          {p.name}: {prefix}{fmt(p.value)}{suffix}
+          {p.name}: {prefix}{fmt(p.value, dec)}{suffix}
         </p>
       ))}
     </div>
@@ -334,7 +334,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
               <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} width={60} />
-              <Tooltip content={<CustomTooltip prefix="" suffix=" turistas" />} />
+              <Tooltip content={<CustomTooltip prefix="" suffix="" dec={0} labelFormatter={v => { const [y, m] = v.split('-'); return `${MESES_CORTO[+m - 1]} ${y}`; }} />} />
               <Legend />
               <Bar dataKey="Turistas" fill={C.turistas} radius={[3, 3, 0, 0]} />
             </BarChart>
