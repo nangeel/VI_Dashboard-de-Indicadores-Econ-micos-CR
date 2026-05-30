@@ -222,9 +222,22 @@ export default function Dashboard() {
       .catch(e => { setError(e.message); setLoading(false); });
   }, []);
 
+  // Filtros globales
+  const [filtroAño, setFiltroAño] = useState('');
+  const [filtroMes, setFiltroMes] = useState('');
+
+  const añosDisponibles = useMemo(() => [...new Set(data.map(d => d.año))].sort(), [data]);
+
+  const dataFiltrada = useMemo(() =>
+    data.filter(d =>
+      (!filtroAño || d.año === parseInt(filtroAño)) &&
+      (!filtroMes || d.mes === filtroMes)
+    )
+  , [data, filtroAño, filtroMes]);
+
   // Gráfico de líneas — serie cronológica, eje X: año-mes
   const lineData = useMemo(() =>
-    [...data]
+    [...dataFiltrada]
       .sort((a, b) => a.año - b.año || ORDEN_MESES.indexOf(a.mes) - ORDEN_MESES.indexOf(b.mes))
       .map(d => ({
         periodo:    `${d.año}-${String(ORDEN_MESES.indexOf(d.mes) + 1).padStart(2, '0')}`,
@@ -233,31 +246,27 @@ export default function Dashboard() {
         maximo:     d.maximo,
         minimo:     d.minimo,
       }))
-  , [data]);
+  , [dataFiltrada]);
 
-  // Barras turistas
   const turistasData = useMemo(() => {
     const map = {};
-    data.forEach(({ año, turistas }) => {
-      if (!map[año]) map[año] = turistas;
+    dataFiltrada.forEach(({ año, turistas }) => {
+      if (!map[año]) map[año] = 0;
+      map[año] += turistas;
     });
-    return Object.keys(map).sort().map(año => ({
-      periodo: año,
-      Turistas: map[año],
-    }));
-  }, [data]);
+    return Object.keys(map).sort().map(año => ({ periodo: año, Turistas: map[año] }));
+  }, [dataFiltrada]);
 
-  // KPIs
   const kpis = useMemo(() => {
-    if (!data.length) return null;
-    const tc = data.map(d => d.tipoCambio);
-    const mx = data.map(d => d.maximo);
-    const mn = data.map(d => d.minimo);
+    if (!dataFiltrada.length) return null;
+    const tc = dataFiltrada.map(d => d.tipoCambio);
+    const mx = dataFiltrada.map(d => d.maximo);
+    const mn = dataFiltrada.map(d => d.minimo);
     return {
       tcMax: Math.max(...tc), tcMin: Math.min(...tc), tcAvg: avg(tc),
       mxMax: Math.max(...mx), mnMin: Math.min(...mn),
     };
-  }, [data]);
+  }, [dataFiltrada]);
 
   if (loading) return <div className="dash-state">Cargando datos…</div>;
   if (error)   return <div className="dash-state dash-error">⚠ {error}</div>;
@@ -265,73 +274,120 @@ export default function Dashboard() {
   return (
     <div className="dash-root">
 
-      {/* ── Header ── */}
+      {/* ── 1. TÍTULO Y DESCRIPCIÓN ── */}
       <header className="dash-header">
         <div className="dash-header-inner">
           <div>
-            <h1 className="dash-title">Dashboard de Indicadores Económicos CR</h1>
-            <p className="dash-subtitle">Análisis multivariado de los factores que influyen en la caída del dólar en Costa Rica</p>
+            <h1 className="dash-title">Dashboard de Indicadores Económicos — Costa Rica</h1>
+
           </div>
 
+        </div>
+        <div className="dash-description">
+          <p>
+            Este dashboard analiza la evolución del tipo de cambio USD/CRC entre <strong>{data[0]?.año}</strong> y <strong>{data[data.length - 1]?.año}</strong>,
+            integrando variables como las reservas internacionales del Banco Central (BCCR) y el ingreso de turistas,
+            con el objetivo de identificar patrones y factores asociados a la apreciación del colón costarricense frente al dólar.
+          </p>
         </div>
       </header>
 
       <main className="dash-main">
 
-        {/* ── KPI Cards ── */}
+        {/* ── 2. FILTROS ── */}
+        <section className="section-block">
+
+          <div className="filters-bar">
+            <div className="filter-item">
+              <label className="filter-label">Año</label>
+              <select className="table-select" value={filtroAño} onChange={e => setFiltroAño(e.target.value)}>
+                <option value="">Todos</option>
+                {añosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div className="filter-item">
+              <label className="filter-label">Mes</label>
+              <select className="table-select" value={filtroMes} onChange={e => setFiltroMes(e.target.value)}>
+                <option value="">Todos</option>
+                {ORDEN_MESES.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 3. KPIs ── */}
         {kpis && (
-          <section className="kpi-grid">
-            <KpiCard label="Tipo Cambio Máximo"   value={`₡ ${fmt(kpis.tcMax)}`} accent="#1d4ed8" />
-            <KpiCard label="Tipo Cambio Mínimo"   value={`₡ ${fmt(kpis.tcMin)}`} accent="#3b82f6" />
-            <KpiCard label="Tipo Cambio Promedio" value={`₡ ${fmt(kpis.tcAvg)}`} accent="#60a5fa" />
+          <section className="section-block">
+
+            <div className="kpi-grid">
+              <KpiCard label="Tipo Cambio Máximo"   value={`₡ ${fmt(kpis.tcMax)}`} accent="#1d4ed8" />
+              <KpiCard label="Tipo Cambio Mínimo"   value={`₡ ${fmt(kpis.tcMin)}`} accent="#3b82f6" />
+              <KpiCard label="Tipo Cambio Promedio" value={`₡ ${fmt(kpis.tcAvg)}`} accent="#60a5fa" />
+            </div>
           </section>
         )}
 
-        {/* ── Gráfico de Líneas ── */}
-        <div className="chart-card">
-          <h3 className="chart-title">Evolución Histórica — Tipo de Cambio (₡)</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={lineData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-              <XAxis
-                dataKey="periodo"
-                tick={{ fontSize: 11 }}
-                interval="preserveStartEnd"
-                tickFormatter={v => v.split('-')[0]}
-                ticks={lineData
-                  .filter((d, i, arr) => i === 0 || d.año !== arr[i - 1].año)
-                  .map(d => d.periodo)}
-              />
-              <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11 }} tickFormatter={v => `₡${fmt(v, 0)}`} width={80} />
-              <Tooltip content={<CustomTooltip labelFormatter={v => { const [y, m] = v.split('-'); return `${MESES_CORTO[+m - 1]} ${y}`; }} />} />
-              <Legend />
-              <Line type="monotone" dataKey="tipoCambio" name="Tipo de Cambio" stroke={C.tipoCambio} dot={false} strokeWidth={2} />
-              <Line type="monotone" dataKey="maximo"     name="Máximo"         stroke={C.maximo}     dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
-              <Line type="monotone" dataKey="minimo"     name="Mínimo"         stroke={C.minimo}     dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {/* ── 4. VISUALIZACIONES PRINCIPALES ── */}
+        <section className="section-block">
 
-        {/* ── Heatmap Reservas ── */}
-        <HeatmapReservas data={data} />
+          <div className="dash-grid-2">
+            <div className="chart-card">
+              <h3 className="chart-title">Evolución Histórica — Tipo de Cambio (₡)</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={lineData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+                  <XAxis
+                    dataKey="periodo"
+                    tick={{ fontSize: 11 }}
+                    interval="preserveStartEnd"
+                    tickFormatter={v => v.split('-')[0]}
+                    ticks={lineData
+                      .filter((d, i, arr) => i === 0 || d.año !== arr[i - 1].año)
+                      .map(d => d.periodo)}
+                  />
+                  <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11 }} tickFormatter={v => `₡${fmt(v, 0)}`} width={80} />
+                  <Tooltip content={<CustomTooltip labelFormatter={v => { const [y, m] = v.split('-'); return `${MESES_CORTO[+m - 1]} ${y}`; }} />} />
+                  <Legend />
+                  <Line type="monotone" dataKey="tipoCambio" name="Tipo de Cambio" stroke={C.tipoCambio} dot={false} strokeWidth={2} />
+                  <Line type="monotone" dataKey="maximo"     name="Máximo"         stroke={C.maximo}     dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
+                  <Line type="monotone" dataKey="minimo"     name="Mínimo"         stroke={C.minimo}     dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
-        {/* ── Barras Turistas ── */}
-        <div className="chart-card">
-          <h3 className="chart-title">Ingreso de Turistas por Período</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={turistasData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-              <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} width={60} />
-              <Tooltip content={<CustomTooltip prefix="" suffix="" dec={0} />} isAnimationActive={false} />
-              <Legend />
-              <Bar dataKey="Turistas" fill={C.turistas} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+            <div className="chart-card">
+              <h3 className="chart-title">Ingreso de Turistas por Período</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={turistasData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+                  <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} width={60} />
+                  <Tooltip content={<CustomTooltip prefix="" suffix="" dec={0} />} isAnimationActive={false} />
+                  <Legend />
+                  <Bar dataKey="Turistas" fill={C.turistas} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
 
-        {/* ── Tabla ── */}
-        <TablaHistorica raw={rawRows} />
+        {/* ── 5. VISUALIZACIONES SECUNDARIAS ── */}
+        <section className="section-block">
+          <HeatmapReservas data={dataFiltrada} />
+          <TablaHistorica raw={rawRows} />
+        </section>
+
+        {/* ── 6. CONCLUSIONES ── */}
+        <section className="section-block">
+          <div className="conclusion-card">
+            <div>
+              <p className="conclusion-titulo">Conclusiones y Hallazgos</p>
+              <p className="conclusion-texto">
+                El tipo de cambio USD/CRC mostró una tendencia sostenida a la baja desde 2022, pasando de niveles superiores a ₡700 a valores cercanos a ₡500, reflejando una apreciación significativa del colón. Las reservas internacionales del BCCR mantuvieron niveles elevados durante este período, lo que sugiere una política monetaria activa para moderar la volatilidad cambiaria. Por otro lado, el ingreso de turistas mostró una fuerte recuperación a partir de 2021 tras el impacto del COVID-19 en 2020, contribuyendo al aumento de divisas y presionando al alza el valor del colón. En conjunto, se observa una correlación inversa entre el flujo turístico y el tipo de cambio: a mayor ingreso de turistas, mayor oferta de dólares en el mercado, lo que tiende a reducir el precio del dólar frente al colón.
+              </p>
+            </div>
+          </div>
+        </section>
 
       </main>
 
@@ -339,19 +395,12 @@ export default function Dashboard() {
       <footer className="dash-footer">
         <p className="footer-title">Fuentes de datos oficiales</p>
         <div className="footer-sources">
-          <a href="https://www.bccr.fi.cr" target="_blank" rel="noreferrer" className="footer-link">
-            🏦 Banco Central de Costa Rica (BCCR)
-          </a>
+          <a href="https://www.bccr.fi.cr" target="_blank" rel="noreferrer" className="footer-link">🏦 Banco Central de Costa Rica (BCCR)</a>
           <span className="footer-sep">·</span>
-          <a href="https://www.ict.go.cr" target="_blank" rel="noreferrer" className="footer-link">
-            ✈ Instituto Costarricense de Turismo (ICT)
-          </a>
+          <a href="https://www.ict.go.cr" target="_blank" rel="noreferrer" className="footer-link">✈ Instituto Costarricense de Turismo (ICT)</a>
           <span className="footer-sep">·</span>
-          <a href="https://es.investing.com/currencies/usd-crc-user-rankings" target="_blank" rel="noreferrer" className="footer-link">
-            📈 Investing.com — USD/CRC
-          </a>
+          <a href="https://es.investing.com/currencies/usd-crc-user-rankings" target="_blank" rel="noreferrer" className="footer-link">📈 Investing.com — USD/CRC</a>
         </div>
-
       </footer>
 
     </div>
