@@ -383,7 +383,7 @@ export default function Dashboard() {
             <div>
               <p className="conclusion-titulo">Conclusiones y Hallazgos</p>
               <p className="conclusion-texto">
-                El tipo de cambio USD/CRC mostró una tendencia sostenida a la baja desde 2022, pasando de niveles superiores a ₡700 a valores cercanos a ₡500, reflejando una apreciación significativa del colón. Las reservas internacionales del BCCR mantuvieron niveles elevados durante este período, lo que sugiere una política monetaria activa para moderar la volatilidad cambiaria. Por otro lado, el ingreso de turistas mostró una fuerte recuperación a partir de 2021 tras el impacto del COVID-19 en 2020, contribuyendo al aumento de divisas y presionando al alza el valor del colón. En conjunto, se observa una correlación inversa entre el flujo turístico y el tipo de cambio: a mayor ingreso de turistas, mayor oferta de dólares en el mercado, lo que tiende a reducir el precio del dólar frente al colón.
+                Entre 2022 y 2025, el tipo de cambio USD/CRC disminuyó significativamente, pasando de más de ₡700 a cerca de ₡500 por dólar, lo que evidencia una apreciación del colón. Durante este período, las reservas internacionales del BCCR se mantuvieron altas y el turismo se recuperó con fuerza tras la pandemia, aumentando la entrada de divisas al país. Esto generó una mayor oferta de dólares en el mercado, contribuyendo a la reducción del tipo de cambio y mostrando una relación inversa entre el ingreso de turistas y el valor del dólar.
               </p>
             </div>
           </div>
